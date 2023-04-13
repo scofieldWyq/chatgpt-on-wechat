@@ -92,7 +92,7 @@ class ChatGPTBot(Bot,OpenAIImage):
             "frequency_penalty":conf().get('frequency_penalty', 0.0),  # [-2,2]之间，该值越大则更倾向于产生不同的内容
             "presence_penalty":conf().get('presence_penalty', 0.0),  # [-2,2]之间，该值越大则更倾向于产生不同的内容
             "request_timeout": conf().get('request_timeout', 30),  # 请求超时时间
-            "stream": True
+            # "stream": True
         }
 
     def reply_text(self, session:ChatGPTSession, session_id, api_key, retry_count=0) -> dict:
@@ -107,26 +107,34 @@ class ChatGPTBot(Bot,OpenAIImage):
             if conf().get('rate_limit_chatgpt') and not self.tb4chatgpt.get_token():
                 raise openai.error.RateLimitError("RateLimitError: rate limit exceeded")
             # if api_key == None, the default openai.api_key will be used
-            start = time.time()
-            count = 0
-            answer = ''
-            delay_time = 0.01
+            # start = time.time()
+            # count = 0
+            # answer = ''
+            # delay_time = 0.01
 
+            # response = openai.ChatCompletion.create(
+            #     api_key=api_key, messages=session.messages, **self.compose_args()
+            # )
+
+            # for event in response:
+            #     print(answer, end='', flush=True) # Print the response
+            #     count += 1
+            #     event_text = event['choices'][0]['delta'] # EVENT DELTA RESPONSE
+            #     answer += event_text.get('content', '') # RETRIEVE CONTENT
+            #     time.sleep(delay_time)
+                
+            # logger.warning(f"[ChatGPT] reply={answer}, cost: {time.time() - start}s")
+            # # logger.info("[ChatGPT] reply={}, total_tokens={}".format(response.choices[0]['message']['content'], response["usage"]["total_tokens"]))
+            # return {"total_tokens": count,
+            #         "completion_tokens": count,
+            #         "content": answer}
             response = openai.ChatCompletion.create(
                 api_key=api_key, messages=session.messages, **self.compose_args()
             )
-
-            for event in response:
-                count += 1
-                event_text = event['choices'][0]['delta'] # EVENT DELTA RESPONSE
-                answer += event_text.get('content', '') # RETRIEVE CONTENT
-                time.sleep(delay_time)
-                
-            logger.warning(f"[ChatGPT] reply={answer}, cost: {time.time() - start}s")
             # logger.info("[ChatGPT] reply={}, total_tokens={}".format(response.choices[0]['message']['content'], response["usage"]["total_tokens"]))
-            return {"total_tokens": count,
-                    "completion_tokens": count,
-                    "content": answer}
+            return {"total_tokens": response["usage"]["total_tokens"],
+                    "completion_tokens": response["usage"]["completion_tokens"],
+                    "content": response.choices[0]['message']['content']}
         
         except Exception as e:
             need_retry = retry_count < 2
